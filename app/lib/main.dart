@@ -2,12 +2,14 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:flutter_blue/flutter_blue.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:flutter_grid_button/flutter_grid_button.dart';
 
-main() {
-  runApp(ElephantEdgeApp());
-}
+main() => runApp(ElephantEdgeApp());
+
+enum labels { Resting, Walking, Running, Playing, Climbing, Descending }
 
 class ElephantEdgeApp extends StatelessWidget {
   @override
@@ -39,12 +41,33 @@ class _ElephantEdgeState extends State<ElephantEdge> {
   BluetoothDeviceState deviceState;
 
   String connectionText = "Elephant Edge";
+  String cls;
+  int counter;
+  Timer timer;
+  StreamController<int> counterStream;
 
   @override
   void initState() {
     super.initState();
     deviceState = BluetoothDeviceState.disconnected;
-    //startScan();
+    counterStream = new BehaviorSubject<int>.seeded(30);
+  }
+
+  void startTimer(BuildContext context) {
+    counter = 30;
+    counterStream.add(counter);
+    if (timer != null) {
+      timer.cancel();
+    }
+    timer = Timer.periodic(Duration(seconds: 1), (timer) {
+      if (counter > 0) {
+        counter--;
+      } else {
+        timer.cancel();
+        Navigator.of(context).pop();
+      }
+      counterStream.add(counter);
+    });
   }
 
   startScan() {
@@ -137,11 +160,15 @@ class _ElephantEdgeState extends State<ElephantEdge> {
             in service.characteristics) {
           if (characteristic.uuid.toString() == charUUID) {
             targetCharacteristic = characteristic;
-            await targetCharacteristic.setNotifyValue(true);
             setState(() {
               connectionText = "Connected to ${targetDevice.name}";
             });
             print("Found Characteristics");
+            await targetCharacteristic.setNotifyValue(true);
+            targetCharacteristic.value.listen((data) {
+              String str = new String.fromCharCodes(data);
+              print('$cls: $str\n');
+            });
           }
         }
       }
@@ -163,48 +190,89 @@ class _ElephantEdgeState extends State<ElephantEdge> {
     return file.writeAsString('$data\n');
   }
 
+  void recordingDialog(BuildContext context) {
+    startTimer(context);
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('$cls'),
+          content: StreamBuilder<int>(
+              stream: counterStream.stream,
+              builder: (BuildContext context, AsyncSnapshot<int> snapshot) {
+                return SingleChildScrollView(
+                    child: ListBody(
+                  children: <Widget>[
+                    Text('00:${snapshot.data.toString().padLeft(2, '0')}'),
+                  ],
+                ));
+              }),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text('Stop'),
+              onPressed: () {
+                timer.cancel();
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    Widget scanButton = StreamBuilder(
+        stream: flutterBlue.isScanning,
+        initialData: false,
+        builder: (BuildContext context, snapshot) {
+          return new Center(
+            child: CupertinoButton.filled(
+              onPressed: snapshot.data ? null : () => startScan(),
+              child: Text('Scan', style: TextStyle(fontSize: 20)),
+            ),
+          );
+        });
+    Widget gridButton = GridButton(
+        textStyle: TextStyle(fontSize: 26),
+        borderWidth: 3,
+        onPressed: (dynamic val) {
+          if (labels.values.contains(val)) {
+            cls = val.toString().split('.')[1];
+            recordingDialog(context);
+          }
+        },
+        items: [
+          [
+            GridButtonItem(title: 'Walking', longPressValue: labels.Walking),
+            GridButtonItem(title: 'Running', longPressValue: labels.Running),
+          ],
+          [
+            GridButtonItem(title: 'Resting', longPressValue: labels.Resting),
+            GridButtonItem(title: 'Playing', longPressValue: labels.Playing),
+          ],
+          [
+            GridButtonItem(title: 'Climbing', longPressValue: labels.Climbing),
+            GridButtonItem(
+                title: 'Descending', longPressValue: labels.Descending),
+          ]
+        ]);
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text(connectionText),
-      ),
-      body: Container(
-          child: deviceState == BluetoothDeviceState.disconnected
-              ? StreamBuilder(
-                  stream: flutterBlue.isScanning,
-                  initialData: false,
-                  builder: (BuildContext context, snapshot) {
-                    return new Center(
-                      child: CupertinoButton.filled(
-                        onPressed: snapshot.data ? null : () => startScan(),
-                        child: Text('Scan', style: TextStyle(fontSize: 20)),
-                      ),
-                    );
-                  })
-              : targetCharacteristic == null
-                  ? Center(child: CircularProgressIndicator())
-                  : StreamBuilder(
-                      stream: targetCharacteristic.value,
-                      initialData: "",
-                      builder: (BuildContext context, snapshot) {
-                        if (snapshot.hasData && snapshot.data.length > 0) {
-                          String data = new String.fromCharCodes(snapshot.data);
-                          writeData(data);
-                          return Column(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: <Widget>[
-                              Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceEvenly,
-                                  children: <Widget>[
-                                    Text(data, style: TextStyle(fontSize: 16)),
-                                  ]),
-                            ],
-                          );
-                        }
-                        return CircularProgressIndicator();
-                      })),
-    );
+        appBar: AppBar(
+          title: Text(connectionText),
+        ),
+        body: Container(
+            child: deviceState != BluetoothDeviceState.disconnected
+                ? scanButton
+                : gridButton));
   }
 }

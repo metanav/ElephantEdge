@@ -30,7 +30,7 @@ dependencies:
   cupertino_icons: ^1.0.0
   flutter_blue: ^0.7.2
   path_provider: ^1.6.18
-
+  flutter_grid_button: ^1.1.7
 dev_dependencies:
   flutter_test:
     sdk: flutter
