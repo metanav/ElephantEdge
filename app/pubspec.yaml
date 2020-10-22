@@ -33,6 +33,7 @@ dependencies:
   path_provider: ^1.6.18
   flutter_grid_button: ^1.1.7
   http: ^0.12.2
+  flutter_compass: ^0.5.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

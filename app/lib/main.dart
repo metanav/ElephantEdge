@@ -9,10 +9,12 @@ import 'package:rxdart/rxdart.dart';
 import 'package:flutter_blue/flutter_blue.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_grid_button/flutter_grid_button.dart';
+import 'package:flutter_compass/flutter_compass.dart';
 
 main() => runApp(ElephantEdgeApp());
 
 enum labels { Resting, Walking, Running, Playing, Climbing, Descending }
+enum orientation { UP, DOWN, LEFT, RIGHT }
 
 class ElephantEdgeApp extends StatelessWidget {
   @override
@@ -21,7 +23,7 @@ class ElephantEdgeApp extends StatelessWidget {
       title: 'Elephant Edge',
       debugShowCheckedModeBanner: false,
       home: ElephantEdge(),
-      theme: ThemeData.dark(),
+      //theme: ThemeData.dark(),
     );
   }
 }
@@ -47,9 +49,11 @@ class _ElephantEdgeState extends State<ElephantEdge> {
   StreamController<Map> uploadController;
   String connectionText = "Elephant Edge";
   String cls;
+  String cls2;
   int counter;
   Timer timer;
   List sensorValues = new List();
+  List directions = new List();
   bool recording = false;
 
   @override
@@ -59,6 +63,13 @@ class _ElephantEdgeState extends State<ElephantEdge> {
     counterController = new BehaviorSubject<int>.seeded(30);
     uploadController =
         new BehaviorSubject<Map>.seeded({'file': '', 'value': 0.0});
+
+    FlutterCompass.events.listen((angle) {
+      if (recording) {
+        print('Angle: $angle');
+        directions.add(angle);
+      }
+    });
   }
 
   void startTimer(BuildContext context) {
@@ -131,7 +142,6 @@ class _ElephantEdgeState extends State<ElephantEdge> {
     await FlutterBlue.instance.stopScan();
     scanSubScription?.cancel();
     scanSubScription = null;
-    print("stop scan");
   }
 
   connectToDevice() async {
@@ -142,7 +152,6 @@ class _ElephantEdgeState extends State<ElephantEdge> {
     });
 
     await targetDevice.connect();
-    print('DEVICE CONNECTED');
     setState(() {
       connectionText = "Device Connected";
     });
@@ -151,7 +160,6 @@ class _ElephantEdgeState extends State<ElephantEdge> {
   }
 
   disconnectFromDevice() {
-    print('DEVICE disconnecting');
     if (targetDevice == null) return;
 
     targetDevice.disconnect();
@@ -160,7 +168,6 @@ class _ElephantEdgeState extends State<ElephantEdge> {
       connectionText = "Device Disconnected";
       targetDevice = null;
     });
-    print('DEVICE disconnected');
   }
 
   discoverServices() async {
@@ -176,13 +183,11 @@ class _ElephantEdgeState extends State<ElephantEdge> {
             setState(() {
               connectionText = "Connected to ${targetDevice.name}";
             });
-            print("Found Characteristics");
             await targetCharacteristic.setNotifyValue(true);
 
             targetCharacteristic.value.listen((data) {
               if (recording) {
                 sensorValues.add(new String.fromCharCodes(data));
-                print('append data');
               }
             });
           }
@@ -202,6 +207,7 @@ class _ElephantEdgeState extends State<ElephantEdge> {
     final file = File('$path/$cls.$timestamp.csv');
     String data = sensorValues.join('\n');
     sensorValues.clear();
+    directions.clear();
     return file.writeAsString(data);
   }
 
@@ -243,14 +249,15 @@ class _ElephantEdgeState extends State<ElephantEdge> {
     );
   }
 
-  void uploadingDialog(BuildContext context) {
-    startUpload();
+  void uploadingDialog(BuildContext context, String datasetType) {
+    startUpload(datasetType);
     showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
         return CupertinoAlertDialog(
-          title: Text('Upload to Edge Impulse', style: TextStyle(fontSize: 20)),
+          title:
+              Text('Uploading to Edge Impulse', style: TextStyle(fontSize: 20)),
           content: StreamBuilder<Map>(
               stream: uploadController.stream,
               builder: (BuildContext context, AsyncSnapshot<Map> snapshot) {
@@ -272,7 +279,7 @@ class _ElephantEdgeState extends State<ElephantEdge> {
     );
   }
 
-  startUpload() async {
+  startUpload(String datasetType) async {
     final path = await _localPath;
     var files = Directory(path)
         .listSync()
@@ -296,8 +303,10 @@ class _ElephantEdgeState extends State<ElephantEdge> {
               .toList();
           print(values);
           uploadController.add({'file': filename, 'value': i / count});
-          //await Future.delayed(const Duration(seconds: 5), () {});
-          uploadToEdgeImpulse(filename, values);
+          final endpoint =
+              'https://ingestion.edgeimpulse.com/api/$datasetType/data';
+
+          uploadToEdgeImpulse(endpoint, filename, values);
         }
       }
     } catch (e) {
@@ -308,10 +317,10 @@ class _ElephantEdgeState extends State<ElephantEdge> {
     Navigator.of(context).pop();
   }
 
-  uploadToEdgeImpulse(filename, values) async {
-    final hmacKey = '1fd9c37d114b9cb9ae658905e2f5888d';
+  uploadToEdgeImpulse(endpoint, filename, values) async {
+    final hmacKey = '1dbddc4c372fb95c3845481afaf53026';
     final apiKey =
-        'ei_0244e827c85da58ff46cc06ac7d5159d1dc9431d8cafc51be687d3d4e8205928';
+        'ei_a3718f368123649639fc29db6f0067a9a3aa66119bb8914e1db47338ce1c7ca5';
 
     var data = {
       'protected': {
@@ -346,11 +355,9 @@ class _ElephantEdgeState extends State<ElephantEdge> {
     encoded = jsonEncode(data);
     print(encoded);
 
-    final String url = 'https://ingestion.edgeimpulse.com/api/training/data';
-
     try {
       final httpClient = HttpClient();
-      final request = await httpClient.postUrl(Uri.parse(url));
+      final request = await httpClient.postUrl(Uri.parse(endpoint));
       request.headers.add('x-api-key', apiKey);
       request.headers.add('x-file-name', filename);
       request.headers.add('content-type', 'application/json');
@@ -371,6 +378,53 @@ class _ElephantEdgeState extends State<ElephantEdge> {
     }
   }
 
+  Future<orientation> getOrientation() async {
+    return showCupertinoModalPopup<orientation>(
+      context: context,
+      builder: (BuildContext context) {
+        return CupertinoActionSheet(
+          title: Text(
+            'Collar Orientation',
+            style: TextStyle(fontSize: 18.0),
+          ),
+          actions: <Widget>[
+            CupertinoActionSheetAction(
+              child: Text('Up'),
+              onPressed: () {
+                Navigator.of(context).pop(orientation.UP);
+              },
+            ),
+            CupertinoActionSheetAction(
+              child: Text('Down'),
+              onPressed: () {
+                Navigator.of(context).pop(orientation.DOWN);
+              },
+            ),
+            CupertinoActionSheetAction(
+              child: Text('Left'),
+              onPressed: () {
+                Navigator.of(context).pop(orientation.LEFT);
+              },
+            ),
+            CupertinoActionSheetAction(
+              child: Text('Right'),
+              onPressed: () {
+                Navigator.of(context).pop(orientation.RIGHT);
+              },
+            ),
+          ],
+          cancelButton: CupertinoActionSheetAction(
+            isDefaultAction: true,
+            child: Text('Cancel'),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     Widget scanButton = StreamBuilder(
@@ -385,12 +439,17 @@ class _ElephantEdgeState extends State<ElephantEdge> {
           );
         });
     Widget gridButton = GridButton(
-        textStyle: TextStyle(fontSize: 26, color: Colors.black),
+        textStyle: TextStyle(fontSize: 24, color: Colors.black),
         borderWidth: 3,
-        onPressed: (dynamic val) {
+        onPressed: (dynamic val) async {
           if (labels.values.contains(val)) {
             cls = val.toString().split('.')[1];
-            recordingDialog(context);
+            var val2 = await getOrientation();
+            if (orientation.values.contains(val2)) {
+              cls2 = val2.toString().split('.')[1];
+              print(cls2);
+              recordingDialog(context);
+            }
           }
         },
         items: [
@@ -410,37 +469,47 @@ class _ElephantEdgeState extends State<ElephantEdge> {
                 color: Colors.yellowAccent,
                 longPressValue: labels.Resting),
             GridButtonItem(
-                title: 'Playing',
+                title: 'Standing',
                 color: Colors.pinkAccent,
                 longPressValue: labels.Playing),
-          ],
-          [
-            GridButtonItem(
-                title: 'Climbing',
-                color: Colors.green,
-                longPressValue: labels.Climbing),
-            GridButtonItem(
-                title: 'Descending',
-                color: Colors.deepPurpleAccent,
-                longPressValue: labels.Descending),
           ]
         ]);
 
     return Scaffold(
-        appBar: AppBar(
-          title: Text(connectionText),
-          actions: <Widget>[
-            IconButton(
-              icon: Icon(Icons.upload_file),
-              onPressed: () {
-                uploadingDialog(context);
-              },
-            ),
-          ],
-        ),
+        appBar: AppBar(title: Text(connectionText)),
         body: Container(
             child: deviceState == BluetoothDeviceState.disconnected
                 ? scanButton
-                : gridButton));
+                : Padding(
+                    padding: const EdgeInsets.all(8.0), child: gridButton)),
+        drawer: Drawer(
+            child: ListView(
+          padding: EdgeInsets.zero,
+          children: <Widget>[
+            DrawerHeader(
+              child: Text('Upload data to Edge Impulse',
+                  style: TextStyle(fontSize: 26)),
+              decoration: BoxDecoration(
+                color: Colors.blue,
+              ),
+            ),
+            ListTile(
+              title:
+                  Text('Upload Training Data', style: TextStyle(fontSize: 18)),
+              onTap: () {
+                uploadingDialog(context, 'training');
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              title:
+                  Text('Upload Testing Data', style: TextStyle(fontSize: 18)),
+              onTap: () {
+                uploadingDialog(context, 'testing');
+                Navigator.pop(context);
+              },
+            )
+          ],
+        )));
   }
 }
