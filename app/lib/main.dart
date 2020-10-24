@@ -84,9 +84,9 @@ class _ElephantEdgeState extends State<ElephantEdge> {
         (compass.heading >= 315 && compass.heading <= 360)) {
       direction = 'North';
     } else if (compass.heading >= 45 && compass.heading < 135) {
-      direction = 'South';
-    } else if (compass.heading >= 135 && compass.heading < 225) {
       direction = 'East';
+    } else if (compass.heading >= 135 && compass.heading < 225) {
+      direction = 'South';
     } else if (compass.heading >= 225 && compass.heading < 315) {
       direction = 'West';
     }
