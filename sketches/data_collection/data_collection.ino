@@ -1,5 +1,6 @@
 #include <ArduinoBLE.h>
 #include <Arduino_LSM9DS1.h>
+#include <Arduino_LPS22HB.h>
 
 #define CONVERT_G_TO_MS2    9.80665f
 #define SERVICE_UUID "61740001-8888-1000-8000-00805f666c79"
@@ -10,11 +11,11 @@ BLEService sensorService(SERVICE_UUID);
 BLEStringCharacteristic sensorChar(CHARACTERISTIC_UUID, BLERead | BLENotify, 64);
 
 long previousMillis = 0;  // last time the sensor was checked, in ms
-char values[64];
+char values[75];
 
 void setup() {
   Serial.begin(115200);
-  while (!Serial);
+  //while (!Serial);
 
   // begin initialization
   if (!BLE.begin()) {
@@ -35,6 +36,11 @@ void setup() {
 
   if (!IMU.begin()) {
     Serial.println("Failed to initialize IMU!");
+    while (1);
+  }
+
+  if (!BARO.begin()) {
+    Serial.println("Failed to initialize pressure sensor!");
     while (1);
   }
 
@@ -62,40 +68,36 @@ void loop() {
     while (central.connected()) {
       long currentMillis = millis();
       float ax, ay, az, gx, gy, gz, mx, my, mz;
+
       if (currentMillis - previousMillis >= 200) {
         previousMillis = currentMillis;
         if (IMU.accelerationAvailable()) {
           IMU.readAcceleration(ax, ay, az);
-//          Serial.print(ax);
-//          Serial.print('\t');
-//          Serial.print(ay);
-//          Serial.print('\t');
-//          Serial.println(az);
         }
 
         if (IMU.gyroscopeAvailable()) {
           IMU.readGyroscope(gx, gy, gz);
-
-//          Serial.print(gx);
-//          Serial.print('\t');
-//          Serial.print(gy);
-//          Serial.print('\t');
-//          Serial.println(gz);
         }
 
         if (IMU.magneticFieldAvailable()) {
           IMU.readMagneticField(mx, my, mz);
-//
-//          Serial.print(mx);
-//          Serial.print('\t');
-//          Serial.print(my);
-//          Serial.print('\t');
-//          Serial.println(mz);
         }
 
-        sprintf(values, 
-            "%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f", 
-            ax * CONVERT_G_TO_MS2, ay * CONVERT_G_TO_MS2, az * CONVERT_G_TO_MS2, gx, gy, gz, mx, my, mz);
+        float pressure = BARO.readPressure();
+
+        sprintf(values,
+                "%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f",
+                ax * CONVERT_G_TO_MS2,
+                ay * CONVERT_G_TO_MS2,
+                az * CONVERT_G_TO_MS2,
+                gx,
+                gy,
+                gz,
+                mx,
+                my,
+                mz,
+                pressure);
+
         Serial.println(values);
         sensorChar.writeValue(values);
       }

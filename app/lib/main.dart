@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:rxdart/rxdart.dart';
@@ -11,10 +12,14 @@ import 'package:path_provider/path_provider.dart';
 import 'package:flutter_grid_button/flutter_grid_button.dart';
 import 'package:flutter_compass/flutter_compass.dart';
 
-main() => runApp(ElephantEdgeApp());
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp])
+      .then((value) => runApp(ElephantEdgeApp()));
+}
 
-enum labels { Resting, Walking, Running, Playing, Climbing, Descending }
-enum orientation { UP, DOWN, LEFT, RIGHT }
+enum Activity { Walking, Running, Resting, Standing }
+enum Orientation { Up, Left, Right }
 
 class ElephantEdgeApp extends StatelessWidget {
   @override
@@ -23,7 +28,7 @@ class ElephantEdgeApp extends StatelessWidget {
       title: 'Elephant Edge',
       debugShowCheckedModeBanner: false,
       home: ElephantEdge(),
-      //theme: ThemeData.dark(),
+      theme: ThemeData.dark(),
     );
   }
 }
@@ -48,12 +53,13 @@ class _ElephantEdgeState extends State<ElephantEdge> {
   StreamController<int> counterController;
   StreamController<Map> uploadController;
   String connectionText = "Elephant Edge";
-  String cls;
-  String cls2;
+  String clsActivity;
+  String clsOrientation;
   int counter;
   Timer timer;
   List sensorValues = new List();
   List directions = new List();
+  String direction = '';
   bool recording = false;
 
   @override
@@ -64,12 +70,27 @@ class _ElephantEdgeState extends State<ElephantEdge> {
     uploadController =
         new BehaviorSubject<Map>.seeded({'file': '', 'value': 0.0});
 
-    FlutterCompass.events.listen((angle) {
+    FlutterCompass.events.listen((compass) {
       if (recording) {
-        print('Angle: $angle');
-        directions.add(angle);
+        direction = getDirection(compass);
+        directions.add(direction);
       }
     });
+  }
+
+  String getDirection(CompassEvent compass) {
+    String direction;
+    if ((compass.heading >= 0 && compass.heading < 45) ||
+        (compass.heading >= 315 && compass.heading <= 360)) {
+      direction = 'North';
+    } else if (compass.heading >= 45 && compass.heading < 135) {
+      direction = 'South';
+    } else if (compass.heading >= 135 && compass.heading < 225) {
+      direction = 'East';
+    } else if (compass.heading >= 225 && compass.heading < 315) {
+      direction = 'West';
+    }
+    return direction;
   }
 
   void startTimer(BuildContext context) {
@@ -91,6 +112,10 @@ class _ElephantEdgeState extends State<ElephantEdge> {
     Navigator.of(context).pop();
     if (save) {
       saveToFile();
+    } else {
+      sensorValues.clear();
+      direction = '';
+      directions.clear();
     }
   }
 
@@ -201,14 +226,86 @@ class _ElephantEdgeState extends State<ElephantEdge> {
     return directory.path;
   }
 
-  Future<File> saveToFile() async {
+  String calculateHeading() {
+    if (directions.length == 0) {
+      throw new Exception('Direction not captured');
+    }
+
+    var heading = {'North': 0, 'South': 0, 'East': 0, 'West': 0};
+
+    directions.forEach((direction) {
+      heading[direction]++;
+    });
+
+    var maxValue = 0;
+    var maxValueKey;
+    var sum = 0;
+
+    heading.forEach((key, value) {
+      if (value > maxValue) {
+        maxValue = value;
+        maxValueKey = key;
+      }
+      sum += value;
+    });
+
+    if (maxValueKey == null) {
+      throw new Exception('Direction not captured');
+    }
+
+    var perMaxValue = maxValue * 100 / sum;
+    if (perMaxValue < 95) {
+      throw new Exception('Direction is not consistent');
+    }
+
+    return maxValueKey;
+  }
+
+  void saveToFile() async {
     final path = await _localPath;
     final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final file = File('$path/$cls.$timestamp.csv');
-    String data = sensorValues.join('\n');
+
+    try {
+      final clsHeading = calculateHeading();
+      final label = '${clsActivity}_${clsOrientation}_$clsHeading';
+      final file = File('$path/$label.$timestamp.csv');
+      file.writeAsString(sensorValues.join('\n'));
+    } catch (e) {
+      fileNotSavedDialog();
+    }
+
     sensorValues.clear();
+    direction = '';
     directions.clear();
-    return file.writeAsString(data);
+  }
+
+  Future<void> fileNotSavedDialog() async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return CupertinoAlertDialog(
+          title: Text('Save Error'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text(
+                    'Inconsistent direction: data will not be saved, please try again.',
+                    style: TextStyle(fontSize: 16)),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            CupertinoDialogAction(
+              child: Text('Close'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void recordingDialog(BuildContext context) {
@@ -218,13 +315,17 @@ class _ElephantEdgeState extends State<ElephantEdge> {
       barrierDismissible: false,
       builder: (BuildContext context) {
         return CupertinoAlertDialog(
-          title: Text('$cls', style: TextStyle(fontSize: 26)),
+          title: Text('$clsActivity', style: TextStyle(fontSize: 26)),
           content: StreamBuilder<int>(
               stream: counterController.stream,
               builder: (BuildContext context, AsyncSnapshot<int> snapshot) {
                 return SingleChildScrollView(
                     child: ListBody(
                   children: <Widget>[
+                    Text('Direction: $direction',
+                        style: TextStyle(fontSize: 22)),
+                    Text('Orientation: $clsOrientation',
+                        style: TextStyle(fontSize: 22)),
                     Text('00:${snapshot.data.toString().padLeft(2, '0')}',
                         style: TextStyle(fontSize: 22)),
                   ],
@@ -305,7 +406,6 @@ class _ElephantEdgeState extends State<ElephantEdge> {
           uploadController.add({'file': filename, 'value': i / count});
           final endpoint =
               'https://ingestion.edgeimpulse.com/api/$datasetType/data';
-
           uploadToEdgeImpulse(endpoint, filename, values);
         }
       }
@@ -314,7 +414,9 @@ class _ElephantEdgeState extends State<ElephantEdge> {
       return 0;
     }
 
-    Navigator.of(context).pop();
+    await Future.delayed(Duration(seconds: 5), () {
+      Navigator.of(context).pop();
+    });
   }
 
   uploadToEdgeImpulse(endpoint, filename, values) async {
@@ -343,6 +445,7 @@ class _ElephantEdgeState extends State<ElephantEdge> {
           {'name': 'magX', 'units': 'uT'},
           {'name': 'magY', 'units': 'uT'},
           {'name': 'magZ', 'units': 'uT'},
+          {'name': 'pressure', 'units': 'kPa'},
         ],
         'values': values
       }
@@ -363,7 +466,6 @@ class _ElephantEdgeState extends State<ElephantEdge> {
       request.headers.add('content-type', 'application/json');
       request.add(utf8.encode(encoded));
 
-      //request.headers.contentType = new ContentType("application", "json");
       final response = await request.close();
       if (response.statusCode == 200) {
         print("Uploaded successfully.");
@@ -378,8 +480,8 @@ class _ElephantEdgeState extends State<ElephantEdge> {
     }
   }
 
-  Future<orientation> getOrientation() async {
-    return showCupertinoModalPopup<orientation>(
+  Future<Orientation> getOrientation() async {
+    return showCupertinoModalPopup<Orientation>(
       context: context,
       builder: (BuildContext context) {
         return CupertinoActionSheet(
@@ -391,27 +493,21 @@ class _ElephantEdgeState extends State<ElephantEdge> {
             CupertinoActionSheetAction(
               child: Text('Up'),
               onPressed: () {
-                Navigator.of(context).pop(orientation.UP);
-              },
-            ),
-            CupertinoActionSheetAction(
-              child: Text('Down'),
-              onPressed: () {
-                Navigator.of(context).pop(orientation.DOWN);
+                Navigator.of(context).pop(Orientation.Up);
               },
             ),
             CupertinoActionSheetAction(
               child: Text('Left'),
               onPressed: () {
-                Navigator.of(context).pop(orientation.LEFT);
+                Navigator.of(context).pop(Orientation.Left);
               },
             ),
             CupertinoActionSheetAction(
               child: Text('Right'),
               onPressed: () {
-                Navigator.of(context).pop(orientation.RIGHT);
+                Navigator.of(context).pop(Orientation.Right);
               },
-            ),
+            )
           ],
           cancelButton: CupertinoActionSheetAction(
             isDefaultAction: true,
@@ -441,13 +537,16 @@ class _ElephantEdgeState extends State<ElephantEdge> {
     Widget gridButton = GridButton(
         textStyle: TextStyle(fontSize: 24, color: Colors.black),
         borderWidth: 3,
-        onPressed: (dynamic val) async {
-          if (labels.values.contains(val)) {
-            cls = val.toString().split('.')[1];
-            var val2 = await getOrientation();
-            if (orientation.values.contains(val2)) {
-              cls2 = val2.toString().split('.')[1];
-              print(cls2);
+        onPressed: (dynamic valActivity) async {
+          if (Activity.values.contains(valActivity)) {
+            clsActivity = valActivity.toString().split('.')[1];
+            var valOrientation = await getOrientation();
+            if (Orientation.values.contains(valOrientation)) {
+              clsOrientation = valOrientation.toString().split('.')[1];
+              print(clsOrientation);
+              final CompassEvent compass = await FlutterCompass.events.first;
+              direction = getDirection(compass);
+              directions.add(direction);
               recordingDialog(context);
             }
           }
@@ -457,21 +556,21 @@ class _ElephantEdgeState extends State<ElephantEdge> {
             GridButtonItem(
                 title: 'Walking',
                 color: Colors.blueAccent,
-                longPressValue: labels.Walking),
+                longPressValue: Activity.Walking),
             GridButtonItem(
                 title: 'Running',
                 color: Colors.deepOrangeAccent,
-                longPressValue: labels.Running),
+                longPressValue: Activity.Running),
           ],
           [
             GridButtonItem(
                 title: 'Resting',
                 color: Colors.yellowAccent,
-                longPressValue: labels.Resting),
+                longPressValue: Activity.Resting),
             GridButtonItem(
                 title: 'Standing',
                 color: Colors.pinkAccent,
-                longPressValue: labels.Playing),
+                longPressValue: Activity.Standing),
           ]
         ]);
 
@@ -481,7 +580,8 @@ class _ElephantEdgeState extends State<ElephantEdge> {
             child: deviceState == BluetoothDeviceState.disconnected
                 ? scanButton
                 : Padding(
-                    padding: const EdgeInsets.all(8.0), child: gridButton)),
+                    padding: const EdgeInsets.symmetric(vertical: 96.0),
+                    child: gridButton)),
         drawer: Drawer(
             child: ListView(
           padding: EdgeInsets.zero,
@@ -497,8 +597,8 @@ class _ElephantEdgeState extends State<ElephantEdge> {
               title:
                   Text('Upload Training Data', style: TextStyle(fontSize: 18)),
               onTap: () {
-                uploadingDialog(context, 'training');
                 Navigator.pop(context);
+                uploadingDialog(context, 'training');
               },
             ),
             ListTile(
