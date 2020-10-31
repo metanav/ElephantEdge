@@ -17,7 +17,6 @@ static rtos::Thread inference_thread(osPriorityLow, 8192);
 static rtos::Thread ble_thread(osPriorityLow);
 static float buffer[EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE] = { 0 };
 ei_impulse_result_t result = { 0 };
-bool result_available = false;
 
 /**
   @brief      Arduino setup function
@@ -81,7 +80,6 @@ void run_inference()
   delay((EI_CLASSIFIER_INTERVAL_MS * EI_CLASSIFIER_RAW_SAMPLE_COUNT) + 100);
 
   while (1) {
-    result_available = false;
 
     // copy the buffer
     float inference_buffer[EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE];
@@ -102,7 +100,6 @@ void run_inference()
       ei_printf("ERR: Failed to run classifier (%d)\n", err);
       return;
     }
-    result_available = true;
     // print the predictions
     //    ei_printf("Predictions (DSP: %d ms., Classification: %d ms., Anomaly: %d ms.): \n",
     //              result.timing.dsp, result.timing.classification, result.timing.anomaly);
@@ -140,25 +137,24 @@ void ble_send_message()
       ei_printf("Connected");
 
       while (central.connected()) {
-        if (1) {
-          char values[DATA_SIZE];
-          sprintf(values,
-                  "{\"status\": \"result\", \"pred\": {\"%s\": %.2f,\"%s\": %.2f,\"%s\": %.2f,\"%s\": %.2f,\"%s\": %.2f}}",
-                  result.classification[0].label,
-                  result.classification[0].value,
-                  result.classification[1].label,
-                  result.classification[1].value,
-                  result.classification[2].label,
-                  result.classification[2].value,
-                  result.classification[3].label,
-                  result.classification[3].value,
-                  result.classification[4].label,
-                  result.classification[4].value
-                 );
+        char values[DATA_SIZE];
+        sprintf(values,
+                "{\"status\": \"result\", \"pred\": {\"%s\": %.2f,\"%s\": %.2f,\"%s\": %.2f,\"%s\": %.2f,\"%s\": %.2f}}",
+                result.classification[0].label,
+                result.classification[0].value,
+                result.classification[1].label,
+                result.classification[1].value,
+                result.classification[2].label,
+                result.classification[2].value,
+                result.classification[3].label,
+                result.classification[3].value,
+                result.classification[4].label,
+                result.classification[4].value
+               );
 
-          ei_printf("%s\n", values);
-          sensorChar.writeValue(values);
-        }
+        ei_printf("%s\n", values);
+        sensorChar.writeValue(values);
+
       }
     }
   }
