@@ -179,45 +179,57 @@ class _ElephantEdgeState extends State<ElephantEdge> {
                         stream: targetCharacteristic.value,
                         initialData: [],
                         builder: (BuildContext context, snapshot) {
-                          if (snapshot != null && snapshot.data != null) {
-                            var payload = jsonDecode(
-                                new String.fromCharCodes(snapshot.data));
+                          if (snapshot != null && snapshot.data.length > 0) {
+                            print(snapshot.data);
+                            try {
+                              var payload = jsonDecode(
+                                  new String.fromCharCodes(snapshot.data));
 
-                            if (payload['status'] == 'result') {
-                              final Map<String, dynamic> pred =
-                                  new Map<String, dynamic>.from(
-                                      payload['pred']);
+                              if (payload['status'] == 'result') {
+                                final Map<String, dynamic> pred =
+                                    new Map<String, dynamic>.from(
+                                        payload['pred']);
 
-                              var sortedKeys = pred.keys.toList(growable: false)
-                                ..sort(
-                                    (k1, k2) => pred[k2].compareTo(pred[k1]));
-                              var sortedPred = new LinkedHashMap.fromIterable(
-                                  sortedKeys,
-                                  key: (k) => k,
-                                  value: (k) => pred[k]);
+                                var sortedKeys = pred.keys.toList(
+                                    growable: false)
+                                  ..sort(
+                                      (k1, k2) => pred[k2].compareTo(pred[k1]));
+                                var sortedPred = new LinkedHashMap.fromIterable(
+                                    sortedKeys,
+                                    key: (k) => k,
+                                    value: (k) => pred[k]);
+                                List<Widget> widgets = [];
+                                var i = 0;
+                                sortedPred.forEach((k, v) {
+                                  i++;
+                                  widgets.add(ListTile(
+                                      selected: i == 1,
+                                      title: Text(
+                                          '${k[0].toUpperCase()}${k.substring(1)}',
+                                          style: TextStyle(
+                                              fontSize: 24,
+                                              color: Colors.white)),
+                                      trailing: Text('$v',
+                                          style: TextStyle(fontSize: 24))));
+                                });
 
-                              List<Widget> widgets = [];
-                              sortedPred.forEach((k, v) {
-                                widgets.add(ListTile(
-                                    title: Text(
-                                        '${k[0].toUpperCase()}${k.substring(1)}',
-                                        style: TextStyle(
-                                            fontSize: 24, color: Colors.white)),
-                                    trailing: Text('$v',
-                                        style: TextStyle(fontSize: 24))));
-                              });
-
-                              return Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(sortedPred.keys.first,
-                                        style: TextStyle(
-                                            fontSize: 40, color: Colors.pink)),
-                                    SizedBox(height: 10),
-                                    ListTileTheme(
-                                        selectedTileColor: Colors.pink,
-                                        child: ListView(children: widgets))
-                                  ]);
+                                return ListTileTheme(
+                                    selectedTileColor: Colors.pink,
+                                    child: ListView(children: widgets));
+                              } else {
+                                return Center(
+                                    child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                      Text('Loading',
+                                          style: TextStyle(fontSize: 30)),
+                                      SizedBox(height: 10),
+                                      CupertinoActivityIndicator(radius: 30.0)
+                                    ]));
+                              }
+                            } catch (e) {
+                              return Text("");
                             }
                           } else {
                             return CupertinoActivityIndicator(radius: 20.0);
