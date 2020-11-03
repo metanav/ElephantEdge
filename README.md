@@ -2,12 +2,12 @@ This repository is for a project created at Hackster.io for the ElephantEdge con
 
 Please read the full story here: [Elephant Activity Deep Learning Model](https://www.hackster.io/naveenbskumar/elephant-activity-deep-learning-model-5b3e98)
 
-##Run inferencing on Arduino Nano 33 BLE Sense
+## Run inferencing on Arduino Nano 33 BLE Sense
 
-###Clone repository
+### Clone repository
 git clone https://github.com/metanav/ElephantEdge.git
 
-###Download Arduino library 
+### Download Arduino library 
 
 Download [ei-elephant_edge_v3-arduino-1.0.2.zip](ei-elephant_edge_v3-arduino-1.0.2.zip)  and add this library through the Arduino IDE via:
 Sketch > Include Library > Add .ZIP Library...
