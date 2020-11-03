@@ -9,6 +9,9 @@ Jacob W. Kamminga, Helena C. Bisby, Duv V. Le, Nirvana Meratnia, and Paul J.M. H
 The Jupyter Notebook for accelerometer/gyroscope data filtering and generating files required by Edge Impulse format can be found here: [data_acquisition_acc_gyr.ipynb](data_acquisition_acc_gyr.ipynb)
 
 ## Deep Learning Model
+![Graph](images/graph.svg)
+![Legend](images/legend.svg)
+
 The model creation and the training Jupyter Notebook can be found here: [ei-elephant_edge_v3-nn-classifier.ipynb](ei-elephant_edge_v3-nn-classifier.ipynb)
 
 ## Run inferencing on Arduino Nano 33 BLE Sense
