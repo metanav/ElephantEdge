@@ -25,7 +25,7 @@ The development of mobile app was done on MacOS with iOS target but it can be co
 Please follow installation instructions here: https://flutter.dev/docs/get-started/install
 
 ### Deploy the app
-Change directory to the downloaded location of the cloned repo and run <b>flutter run --release</b>.
+Change directory to the <b>app/</b> inside the downloaded location of the cloned repo and run <b>flutter run --release</b>.
 Please see the [demo video](https://www.youtube.com/watch?v=AXcJ5IsnUaw&feature=emb_logo).
 
 
