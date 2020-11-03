@@ -19,4 +19,9 @@ Sketch > Include Library > Add .ZIP Library...
 ### Run Demo
 Open [sketches/inferencing_demo/inferencing_demo.ino](sketches/inferencing_demo/inferencing_demo.ino) in the Arduino IDE and click on Sketch > Upload.
 
+## Display Inferencing result using Mobile App
+### Install Flutter
+Please follow installation instructions here: https://flutter.dev/docs/get-started/install
+
+
 
