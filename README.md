@@ -10,7 +10,7 @@ The Jupyter Notebook for accelerometer/gyroscope data filtering and generating f
 
 ## Deep Learning Model
 ![Graph](images/graph.svg)
-![Legend](images/legend.svg)
+![Legend](images/legend.svg =250x250)
 
 The model creation and the training Jupyter Notebook can be found here: [ei-elephant_edge_v3-nn-classifier.ipynb](ei-elephant_edge_v3-nn-classifier.ipynb)
 
