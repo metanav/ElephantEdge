@@ -16,7 +16,7 @@ git clone https://github.com/metanav/ElephantEdge.git
 Download [ei-elephant_edge_v3-arduino-1.0.2.zip](ei-elephant_edge_v3-arduino-1.0.2.zip)  and add this library through the Arduino IDE via:
 Sketch > Include Library > Add .ZIP Library...
 
-## Run Demo
+### Run Demo
 Open [sketches/inferencing_demo/inferencing_demo.ino](sketches/inferencing_demo/inferencing_demo.ino) in the Arduino IDE and click on Sketch > Upload.
 
 
