@@ -17,6 +17,7 @@ The model has 1 input, 1 output and 12 Fully connected (dense) hidden layers.
 The model creation and the training Jupyter Notebook can be found here: [ei-elephant_edge_v3-nn-classifier.ipynb](ei-elephant_edge_v3-nn-classifier.ipynb)
 
 ## Run inferencing on Arduino Nano 33 BLE Sense
+<img src="images/arduino_nano_33_ble_sense.jpeg" width="50%">
 
 ### Install Arduino IDE
 Download and install Arduino IDE (1.8.13 or above) from here: [Arduino IDE](https://www.arduino.cc/en/software).
@@ -33,6 +34,9 @@ Sketch > Include Library > Add .ZIP Library...
 Open [sketches/inferencing_demo/inferencing_demo.ino](sketches/inferencing_demo/inferencing_demo.ino) in the Arduino IDE and click on Sketch > Upload.
 
 ## Display Inferencing result using Mobile App
+<img src="images/app1.jpeg" width="50%">
+<img src="images/app2.jpeg" width="50%">
+
 The development of mobile app was done on MacOS with iOS target but it can be compiled on other supported platforms and can be deployed to the supported Android devices.
 ### Install Flutter
 Please follow installation instructions here: https://flutter.dev/docs/get-started/install
