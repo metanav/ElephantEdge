@@ -3,6 +3,9 @@ This repository is for a project created at Hackster.io for the ElephantEdge con
 
 Please read the full story here: [Elephant Activity Deep Learning Model](https://www.hackster.io/naveenbskumar/elephant-activity-deep-learning-model-5b3e98)
 
+## Deep Learning Model
+The model creation and the training Jupyter Notebook can be found here: [ei-elephant_edge_v3-nn-classifier.ipynb](ei-elephant_edge_v3-nn-classifier.ipynb)
+
 ## Run inferencing on Arduino Nano 33 BLE Sense
 
 ### Install Arduino IDE
