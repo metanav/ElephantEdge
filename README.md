@@ -5,7 +5,7 @@ Please read the full story here: [Elephant Activity Deep Learning Model](https:/
 
 ## Run inferencing on Arduino Nano 33 BLE Sense
 
-###
+### Install Arduino IDE
 Download and install Arduino IDE (1.8.13 or above) from here: [Arduino IDE](https://www.arduino.cc/en/software).
 
 ### Clone repository
@@ -20,6 +20,7 @@ Sketch > Include Library > Add .ZIP Library...
 Open [sketches/inferencing_demo/inferencing_demo.ino](sketches/inferencing_demo/inferencing_demo.ino) in the Arduino IDE and click on Sketch > Upload.
 
 ## Display Inferencing result using Mobile App
+The development of mobile app was done on MacOS with iOS target but it can be compiled on other supported platforms and can be deployed to the supported Android devices.
 ### Install Flutter
 Please follow installation instructions here: https://flutter.dev/docs/get-started/install
 
