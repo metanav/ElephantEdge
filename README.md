@@ -1,6 +1,11 @@
 ## ElephantEdge
 This repository is for a project created at Hackster.io for the ElephantEdge contest. I have created a deep learning model using Edge Impulse Studio to detect elephant activity. For the training 3-axes accelerometer and 3-axes gyroscope data are used. The final model is deployed to the Arduino Nano 33 BLE Sense and the inferencing result is displayed using mobile app over BLE connection. Please read the full story here: [Elephant Activity Deep Learning Model](https://www.hackster.io/naveenbskumar/elephant-activity-deep-learning-model-5b3e98)
 
+## Data
+The dataset can be downloaded from here: [Sheep Goat Data](https://easy.dans.knaw.nl/ui/datasets/id/easy-dataset:76131/tab/2) with citing the following paper:
+
+Jacob W. Kamminga, Helena C. Bisby, Duv V. Le, Nirvana Meratnia, and Paul J.M. Havinga. Generic online animal activity recognition on collar tags. In <i>Proceedings of the 2017 ACM International Joint Conference on Pervasive and Ubiquitous Computing (UbiComp/ISWC’17)</i>. ACM, September 2017
+
 The Jupyter Notebook for accelerometer/gyroscope data filtering and generating files required by Edge Impulse format can be found here: [data_acquisition_acc_gyr.ipynb](data_acquisition_acc_gyr.ipynb)
 
 
