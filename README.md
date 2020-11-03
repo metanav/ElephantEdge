@@ -6,8 +6,7 @@ The dataset can be downloaded from here: [Sheep Goat Data](https://easy.dans.kna
 
 Jacob W. Kamminga, Helena C. Bisby, Duv V. Le, Nirvana Meratnia, and Paul J.M. Havinga. Generic online animal activity recognition on collar tags. In <i>Proceedings of the 2017 ACM International Joint Conference on Pervasive and Ubiquitous Computing (UbiComp/ISWC’17)</i>. ACM, September 2017
 
-The Jupyter Notebook for accelerometer/gyroscope data filtering and generating files required by Edge Impulse format can be found here: [data_acquisition_acc_gyr.ipynb](data_acquisition_acc_gyr.ipynb)
-
+The Jupyter Notebook for accelerometer/gyroscope data filtering and generating files required by Edge Impulse format can be found here. [data_acquisition_acc_gyr.ipynb](data_acquisition_acc_gyr.ipynb)
 
 ## Deep Learning Model
 The model creation and the training Jupyter Notebook can be found here: [ei-elephant_edge_v3-nn-classifier.ipynb](ei-elephant_edge_v3-nn-classifier.ipynb)
