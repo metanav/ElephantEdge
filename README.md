@@ -25,5 +25,6 @@ Please follow installation instructions here: https://flutter.dev/docs/get-start
 
 ### Deploy the app
 Change directory to the downloaded location of the cloned repo and run <b>flutter run --release</b>.
+Please see the [demo video](https://www.youtube.com/watch?v=AXcJ5IsnUaw&feature=emb_logo).
 
 
