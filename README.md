@@ -9,6 +9,8 @@ Jacob W. Kamminga, Helena C. Bisby, Duv V. Le, Nirvana Meratnia, and Paul J.M. H
 The Jupyter Notebook for accelerometer/gyroscope data filtering and generating files required by Edge Impulse format can be found here: [data_acquisition_acc_gyr.ipynb](data_acquisition_acc_gyr.ipynb)
 
 ## Deep Learning Model
+The model has 1 input, 1 output and 12 Fully connected (dense) hidden layers.
+
 <img src="images/graph.svg" width="250%">
 <img src="images/legend.svg" width="50%">
 
