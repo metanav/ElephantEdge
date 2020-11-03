@@ -17,6 +17,7 @@ The model has 1 input, 1 output and 12 Fully connected (dense) hidden layers.
 The model creation and the training Jupyter Notebook can be found here: [ei-elephant_edge_v3-nn-classifier.ipynb](ei-elephant_edge_v3-nn-classifier.ipynb)
 
 ## Run inferencing on Arduino Nano 33 BLE Sense
+<img src="images/arduino_nano_33_ble_sense.jpeg" width="50%">
 
 ### Install Arduino IDE
 Download and install Arduino IDE (1.8.13 or above) from here: [Arduino IDE](https://www.arduino.cc/en/software).
