@@ -12,7 +12,9 @@
 /* Private variables ------------------------------------------------------- */
 static bool debug_nn = false; // Set this to true to see e.g. features generated from the raw signal
 static uint32_t run_inference_every_ms = 200;
-//static rtos::Thread inference_thread(osPriorityLow);
+
+// inference buffer requires 6 (axes) * 200 (frame size) * 4 (float size) = 4800 bytes.
+// Mbed thread has 4096 bytes default maximum memory limit so passing 8192 as maximum memory size 
 static rtos::Thread inference_thread(osPriorityLow, 8192);
 static rtos::Thread ble_thread(osPriorityLow);
 static float buffer[EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE] = { 0 };
