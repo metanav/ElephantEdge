@@ -23,5 +23,7 @@ Open [sketches/inferencing_demo/inferencing_demo.ino](sketches/inferencing_demo/
 ### Install Flutter
 Please follow installation instructions here: https://flutter.dev/docs/get-started/install
 
+### Deploy the app
+Change directory to the downloaded location of the cloned repo and run <b>flutter run --release</b>.
 
 
